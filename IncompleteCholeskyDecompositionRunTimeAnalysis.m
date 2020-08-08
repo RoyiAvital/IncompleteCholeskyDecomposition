@@ -27,12 +27,14 @@ funName = 'IncompleteCholeskyDecomposition()';
 %% Settings
 
 vNumRows            = [100, 250, 500, 750, 1000, 1500, 2000, 2500]; %<! Goes out of memory for 3000
+vNumRows            = [100, 250, 500, 750, 1000]; %<! Goes out of memory for 3000
 randDensity         = 0.000005; %<! Multiply it by (8 * vNumRows(end)^4) and make sure it is smaller
 randDensityFactor   = 2;
 
 discardThr  = 1e-3;
 shiftVal    = 0.001;
-maxNumNz    = (vNumRows(end) * vNumRows(end)) ^ 2;
+maxNumNz    = max((vNumRows(end) * vNumRows(end)) ^ 2, double(intmax('int32')));
+maxNumNz    = 2047483647;
 
 % Using numRows ^ 2 as 'gallery('poisson', numRows)' generates matrix of
 % size numRows^2 * numRows^2.
@@ -40,14 +42,13 @@ hF = @(numRows) GenRandPdSparseMat(numRows ^ 2, randDensity);
 hG = @(numRows) GenRandPdSparseMat(numRows ^ 2, randDensityFactor * randDensity); 
 
 cDecomposer = {@(mA) IncompleteCholeskyDecompositionMex(mA, discardThr, shiftVal, maxNumNz), ...
-    @(mA) ichol(mA), ...
-    @(mA) ichol(mA, struct('type', 'ict', 'droptol', discardThr / 50))};
-cDecomposerString = {['MEX ICT'], ['MATLAB ICT'], ['MATLAB Zero Fill']};
+    @(mA) ichol(mA, struct('type', 'nofill', 'droptol', 0, 'michol', 'off', 'diagcomp', 0, 'shape', 'lower')), ...
+    @(mA) ichol(mA, struct('type', 'ict', 'droptol', discardThr / 50, 'michol', 'off', 'diagcomp', 0, 'shape', 'lower'))};
+cDecomposerString = {['MEX ICT'], ['MATLAB Zero Fill'], ['MATLAB ICT']};
 cMatrixGen = {@(numRows) gallery('poisson', numRows), @(numRows) gallery('tridiag', numRows ^ 2), @(numRows) GenWlsMatrix(numRows), hF, hG};
 cMatrixType = {['Poisson'], ['Tri Diagonal'], ['Weighted Least Squares (WLS)'], ['Random - ', num2str(randDensity)], ['Random - ', num2str(randDensityFactor * randDensity)]};
 
-numIterations = 3;
-
+numIterations = 5;
 
 
 %% Generating Data

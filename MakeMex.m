@@ -48,10 +48,10 @@ enableAutoParallel  = OFF; %<! Windows only
 winCrtLib           = WIN_CRT_LIB_STATIC; %<! Windows only
 
 % MATLAB Configuration
-mexApi = MEX_API_LARGE_ARRAY; %<! If we don't use BLAS, this is the fastest!
+mexApi = MEX_API_LARGE_ARRAY;
 
 % Source File List
-cFileList = {['IncompleteCholeskyDecompositionMex.c'], ['SolveCholsekyLinearSystemMex.c']};
+cFileList = {['IncompleteCholeskyDecompositionMex.c'], ['SolveCholsekyLinearSystemMex.c'], ['RoyiIcholMex.c']};
 
 
 %% Setting Compilation Flags

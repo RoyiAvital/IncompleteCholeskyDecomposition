@@ -16,11 +16,15 @@
  *		*	First release version.
  */
 
+#define ELEMENT_TYPE_IDX 1
+
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
 #include <math.h>
+
+#include "ArraySorting.c"
 
 #define LINKED_LIST_DEF_VAL UINT_MAX
 #define FALSE ((unsigned char)(0))
@@ -102,7 +106,7 @@ int _IncompleteCholDec( double * vData, unsigned int * vIndices, unsigned int * 
 	double *vA, *vD, Lij, Lik, Ljk;
 
 	numNz	= 0; // The current number of non zeros
-	c_n		= 0;
+	c_n		= 0; // Number of elements in a column
 
 	vS = (unsigned int*)calloc(numCols, sizeof(unsigned int)); // Next non zero row index i in column j of L
 	vT = (unsigned int*)calloc(numCols, sizeof(unsigned int)); // First sub diagonal index i in column j of A
@@ -198,7 +202,9 @@ int _IncompleteCholDec( double * vData, unsigned int * vIndices, unsigned int * 
 
 		if (c_n > 0) // Only if there are actually indices to handle
 		{
-			_SortArray(vCSort, vC, c_n); // Sort row indices of column j for correct insertion order into L
+			//_SortArray(vCSort, vC, c_n); // Sort row indices of column j for correct insertion order into L
+			memcpy(vCSort, vC, c_n * sizeof(unsigned int));
+			ArrayQuickSort(vCSort, (unsigned int)0, c_n - 1);
 
 			for (idx = 0; idx < c_n; idx++)
 			{
