@@ -99,7 +99,7 @@ void _BackSubstitutionLT( double * vX, double * vData, unsigned int * vIndices, 
 	}
 }
 
-int _IncompleteCholDec( double * vData, unsigned int * vIndices, unsigned int * vIndicesPtr, double * vDataA, unsigned int * vIndicesA, unsigned int * vIndicesPtrA, unsigned int numCols, double discardThr, double shiftVal, unsigned int maxNumNz )
+int _IncompleteCholDecTGlobal( double * vData, unsigned int * vIndices, unsigned int * vIndicesPtr, double * vDataA, unsigned int * vIndicesA, unsigned int * vIndicesPtrA, unsigned int numCols, double discardThr, double shiftVal, unsigned int maxNumNz )
 {
 	unsigned int numNz, c_n, *vS, *vT, *vL, *vC, * vCSort, ii, jj, idx, kk, k0, k1, k2;
 	unsigned char* vB;
@@ -117,10 +117,6 @@ int _IncompleteCholDec( double * vData, unsigned int * vIndices, unsigned int * 
 	vC = (unsigned int*)malloc(numCols * sizeof(unsigned int)); // Row indices of non zero elements in column j
 	vCSort = (unsigned int*)malloc(numCols * sizeof(unsigned int)); // Sorting buffer for vC
 	vD = (double*)malloc(numCols * sizeof(double)); // Diagonal elements of mA (Of the decomposition: shiftVal + diag(mA))
-	//for (ii = 0; ii < numCols; ii++)
-	//{
-	//	vD[ii] = shiftVal;
-	//}
 
 	for (jj = 0; jj < numCols; jj++)
 	{
@@ -203,7 +199,7 @@ int _IncompleteCholDec( double * vData, unsigned int * vIndices, unsigned int * 
 		if (c_n > 0) // Only if there are actually indices to handle
 		{
 			//_SortArray(vCSort, vC, c_n); // Sort row indices of column j for correct insertion order into L
-			memcpy(vCSort, vC, c_n * sizeof(unsigned int));
+			memcpy(vCSort, vC, c_n * sizeof(unsigned int)); // It seems it could happen in place!
 			ArrayQuickSort(vCSort, (unsigned int)0, c_n - 1);
 
 			for (idx = 0; idx < c_n; idx++)
@@ -245,6 +241,173 @@ int _IncompleteCholDec( double * vData, unsigned int * vIndices, unsigned int * 
 
 }
 
+
+int _IncompleteCholDecTColumn(double* vData, unsigned int* vIndices, unsigned int* vIndicesPtr, double* vDataA, unsigned int* vIndicesA, unsigned int* vIndicesPtrA, unsigned int numCols, double discardThr, unsigned int maxNumNz)
+{
+	//Should mtach MATLAB's `ichol()`.
+	//MATLAB computes the threshold based on the sum of the column starting at the diagonal. This is of course a trivial difference and would not take much time to change, but to my surprise, the produced matrices were different.
+	//The solution was that MATLAB drops values from the output matrix before dividing columns by the diagonal element, which was not clear to me from the documentation.
+	//MATLAB drops values from the output matrix before dividing columns by the diagonal element, which was not clear to me from the documentation.
+	char* vUsedCol;
+	int * vNonZeroRow, * vNextIdxRow, * vIdxCol, * vBuffer, numNz;
+	unsigned int ii, jj, kk, idx, n_indices, idx_start, k_next, first;
+	double* vValCol, colThr, A_ij, diagElement, L_ij, L_jk, L_ik;
+	
+	// Data of row j
+	vNonZeroRow		= (int*)malloc(numCols * sizeof(int));
+	vNextIdxRow		= (int*)malloc(numCols * sizeof(int));
+
+	// Data of column j
+	vValCol		= (double*)malloc(numCols * sizeof(double));
+	vUsedCol	= (char*)malloc(numCols * sizeof(char));
+	vIdxCol		= (int*)malloc(numCols * sizeof(int));
+
+	vBuffer = (int*)malloc(numCols * sizeof(int));
+
+	for (ii = 0; ii < numCols; ii++) {
+		vNonZeroRow[ii]	= -1;
+		vUsedCol[ii]		= 0;
+	}
+
+	numNz = 0;
+	vIndicesPtr[0] = 0;
+	// For each column j of matrix L
+	for (jj = 0; jj < numCols; jj++) {
+		// Read column j from matrix A
+		n_indices = 0;
+		colThr = 0.0;
+		for (idx = vIndicesPtrA[jj]; idx < vIndicesPtrA[jj + 1]; idx++) {
+			ii = vIndicesA[idx];
+			A_ij = vDataA[idx];
+
+			// Only consider lower triangular part of A (including diagonal)
+			if (ii >= jj) {
+				colThr += fabs(A_ij);
+
+				// Activate column element if it is not in use yet
+				if (!vUsedCol[ii]) {
+					vValCol[ii] = 0.0;
+					vUsedCol[ii] = 1;
+					vIdxCol[n_indices] = ii;
+					n_indices += 1;
+				}
+
+				vValCol[ii] += A_ij;
+			}
+		}
+
+		//assert(vUsedCol[jj]);
+
+		colThr *= discardThr;
+
+		// Compute new values for column j using nonzero values L_jk of row j
+		kk = vNonZeroRow[jj];
+		while (kk != -1) {
+			idx_start = vNextIdxRow[kk];
+			// assert(vIndices[idx_start] == jj);
+			L_jk = vData[idx_start];
+
+			// Using nonzero values L_ik of column k
+			for (idx = idx_start; idx < vIndicesPtr[kk + 1]; idx++) {
+				ii = vIndices[idx];
+				L_ik = vData[idx];
+
+				// Activate column element if it is not in use yet
+				if (!vUsedCol[ii]) {
+					vUsedCol[ii] = 1;
+					vValCol[ii] = 0.0;
+					vIdxCol[n_indices] = ii;
+					n_indices += 1;
+				}
+
+				vValCol[ii] -= L_ik * L_jk;
+			}
+
+			// Advance to next non-zero element in column k if it exists
+			idx_start += 1;
+			k_next = vNonZeroRow[kk];
+			// Update start of next row
+			if (idx_start < vIndicesPtr[kk + 1]) {
+				vNextIdxRow[kk] = idx_start;
+				ii = vIndices[idx_start];
+
+				vNonZeroRow[kk] = vNonZeroRow[ii];
+				vNonZeroRow[ii] = kk;
+			}
+			kk = k_next;
+		}
+
+		if (numNz + n_indices > maxNumNz) {
+			numNz = -2;
+			break;
+		}
+
+		diagElement = vValCol[jj];
+
+		// If not positive definite
+		if (diagElement <= 0.0) {
+			numNz = -1;
+			break;
+		}
+
+		diagElement = sqrt(diagElement);
+
+		vValCol[jj] = diagElement;
+
+		// Write diagonal element into matrix L
+		vData[numNz] = diagElement;
+		vIndices[numNz] = jj;
+		numNz++;
+		vNextIdxRow[jj] = numNz;
+
+		// Output indices must be sorted
+		mergesort(vIdxCol, n_indices, vBuffer);
+
+		// Write column j into matrix L
+		first = 1;
+		for (idx = 0; idx < n_indices; idx++) {
+			ii = vIdxCol[idx];
+
+			if (ii != jj) {
+				L_ij = vValCol[ii];
+
+				// Drop small values
+				if (ii != jj && fabs(L_ij) >= colThr) {
+					// Next row starts here
+					if (first) {
+						first = 0;
+
+						vNonZeroRow[jj] = vNonZeroRow[ii];
+						vNonZeroRow[ii] = jj;
+					}
+
+					// Write element L_ij into L
+					L_ij = L_ij / diagElement;
+					vData[numNz] = L_ij;
+					vIndices[numNz] = ii;
+					numNz++;
+				}
+			}
+
+			// Clear column information
+			vUsedCol[ii] = 0;
+		}
+
+		// Keep track of number of elements per column
+		vIndicesPtr[jj + 1] = numNz;
+	}
+
+
+	free(vNonZeroRow);
+	free(vNextIdxRow);
+	free(vValCol);
+	free(vUsedCol);
+	free(vIdxCol);
+	free(vBuffer);
+
+	return numNz;
+}
+
 void IncompleteCholeskyDecomposition( double * vData, unsigned int * vIndices, unsigned int * vIndicesPtr, double * vDataA, unsigned int * vIndicesA, unsigned int * vIndicesPtrA, unsigned int numCols, double discardThr, double* vShifts, unsigned int numShifts, unsigned int maxNumNz )
 {
 	unsigned int ii, numNz;
@@ -253,7 +416,7 @@ void IncompleteCholeskyDecomposition( double * vData, unsigned int * vIndices, u
 	for (ii = 0; ii < numShifts; ii++)
 	{
 		shiftVal = vShifts[ii];
-		numNz = _IncompleteCholDec(vData, vIndices, vIndicesPtr, vDataA, vIndicesA, vIndicesPtrA, numCols, discardThr, shiftVal, maxNumNz);
+		numNz = _IncompleteCholDecTGlobal(vData, vIndices, vIndicesPtr, vDataA, vIndicesA, vIndicesPtrA, numCols, discardThr, shiftVal, maxNumNz);
 	}
 
 }

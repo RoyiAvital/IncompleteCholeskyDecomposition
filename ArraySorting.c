@@ -163,3 +163,22 @@ static void ArrayQuickSort(ELEMENT_TYPE *vA, unsigned int s, unsigned int e) {
 
 	return;
 }
+
+void mergesort(ELEMENT_TYPE *x, unsigned int numElements, ELEMENT_TYPE *vTmp) {
+	if (numElements <= 10) {
+		for (unsigned int ii = 1; ii < numElements; ii++) {
+			ELEMENT_TYPE tmpVal = x[ii];
+			unsigned int jj;
+			for (jj = ii; jj > 0 && x[jj - 1] > tmpVal; jj--) x[jj] = x[jj - 1];
+			x[jj] = tmpVal;
+		}
+	}
+	else {
+		unsigned int m = numElements / 2, ii = 0, jj = m, ll = 0;
+		mergesort(x, m, vTmp);
+		mergesort(x + m, numElements - m, vTmp);
+		while (ii < m && jj < numElements) vTmp[ll++] = x[ii] < x[jj] ? x[ii++] : x[jj++];
+		while (ii < m) vTmp[ll++] = x[ii++];
+		for (unsigned int kk = 0; kk < ll; kk++) x[kk] = vTmp[kk];
+	}
+}

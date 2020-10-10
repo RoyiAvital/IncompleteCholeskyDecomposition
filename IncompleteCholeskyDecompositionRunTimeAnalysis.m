@@ -23,28 +23,31 @@ counterSpec     = '%04d';
 
 funName = 'IncompleteCholeskyDecomposition()';
 
+ICHOL_T_ABS_GLOBAL = 1;
+ICHOL_T_REL_COLUMN = 2;
+
 
 %% Settings
 
-vNumRows            = [100, 250, 500, 750, 1000, 1500, 2000, 2500]; %<! Goes out of memory for 3000
-vNumRows            = [100, 250, 500, 750, 1000]; %<! Goes out of memory for 3000
-randDensity         = 0.000005; %<! Multiply it by (8 * vNumRows(end)^4) and make sure it is smaller
-randDensityFactor   = 2;
+vNumRows            = [0100, 0250, 0500, 0750, 1000, 1500, 2000, 2500]; %<! Goes out of memory for 3000
+vNumRows            = [0100, 0250, 0375, 0500, 0625, 0750, 0875, 1000]; %<! Goes out of memory for 3000
+randDensity         = 0.000005; %<! Multiply it by (8 * vNumRows(end)^4) and make sure it is smaller than memory capacity
+randDensityFactor   = 3;
 
 discardThr  = 1e-3;
 shiftVal    = 0.001;
-maxNumNz    = max((vNumRows(end) * vNumRows(end)) ^ 2, double(intmax('int32')));
-maxNumNz    = 2047483647;
+maxNumNz    = min((vNumRows(end) * vNumRows(end)) ^ 2, double(intmax('int32')));
 
 % Using numRows ^ 2 as 'gallery('poisson', numRows)' generates matrix of
 % size numRows^2 * numRows^2.
 hF = @(numRows) GenRandPdSparseMat(numRows ^ 2, randDensity);
 hG = @(numRows) GenRandPdSparseMat(numRows ^ 2, randDensityFactor * randDensity); 
 
-cDecomposer = {@(mA) IncompleteCholeskyDecompositionMex(mA, discardThr, shiftVal, maxNumNz), ...
-    @(mA) ichol(mA, struct('type', 'nofill', 'droptol', 0, 'michol', 'off', 'diagcomp', 0, 'shape', 'lower')), ...
-    @(mA) ichol(mA, struct('type', 'ict', 'droptol', discardThr / 50, 'michol', 'off', 'diagcomp', 0, 'shape', 'lower'))};
-cDecomposerString = {['MEX ICT'], ['MATLAB Zero Fill'], ['MATLAB ICT']};
+cDecomposer = {@(mA) IncompleteCholeskyDecompositionMex(mA, discardThr, shiftVal, maxNumNz, ICHOL_T_ABS_GLOBAL), ...
+    @(mA) IncompleteCholeskyDecompositionMex(mA, discardThr, shiftVal, maxNumNz, ICHOL_T_REL_COLUMN), ...
+    @(mA) ichol(mA, struct('type', 'nofill', 'droptol', 0, 'michol', 'off', 'shape', 'lower')), ...
+    @(mA) ichol(mA, struct('type', 'ict', 'droptol', discardThr, 'michol', 'off', 'shape', 'lower'))};
+cDecomposerString = {['MEX ICT Global'], ['MEX ICT Column'], ['MATLAB Zero Fill'], ['MATLAB ICT Column']};
 cMatrixGen = {@(numRows) gallery('poisson', numRows), @(numRows) gallery('tridiag', numRows ^ 2), @(numRows) GenWlsMatrix(numRows), hF, hG};
 cMatrixType = {['Poisson'], ['Tri Diagonal'], ['Weighted Least Squares (WLS)'], ['Random - ', num2str(randDensity)], ['Random - ', num2str(randDensityFactor * randDensity)]};
 
@@ -106,7 +109,7 @@ function [ mA ] = GenRandPdSparseMat( numRows, randDensity )
 
 % mA  = sprandsym(numRows, randDensity, rand(numRows, 1)) + (5 * speye(numRows)); %<! Very slow!
 
-% Roughly ensuring the diagonal element in each row is lkarger than the
+% Roughly ensuring the diagonal element in each row is larger than the
 % absolute sum of all other elements in the row
 mA  = sprandsym(numRows, randDensity) + (numRows * speye(numRows));
 

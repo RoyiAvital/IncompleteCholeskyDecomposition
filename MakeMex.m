@@ -51,7 +51,7 @@ winCrtLib           = WIN_CRT_LIB_STATIC; %<! Windows only
 mexApi = MEX_API_LARGE_ARRAY;
 
 % Source File List
-cFileList = {['IncompleteCholeskyDecompositionMex.c'], ['SolveCholsekyLinearSystemMex.c'], ['RoyiIcholMex.c']};
+cFileList = {['IncompleteCholeskyDecompositionMex.c'], ['SolveCholsekyLinearSystemMex.c'], ['ArraySortingMex.c']};
 
 
 %% Setting Compilation Flags

@@ -53,17 +53,20 @@
 #include "mex.h"
 #include "IncompleteCholeskyDecomposition.c"
 
+#define ICHOL_T_ABS_GLOBAL	1
+#define ICHOL_T_REL_COLUMN	2
+
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
 
 	mwSize numRows, numCols, maxNumNzA, numNzA, numNz;
 	mwIndex *Ir, *Jc; // Pseudo Row / Column Vectors of Sparse Matrix
 	double *vData, *vDataA, discardThr, shiftVal;
-	unsigned int *vIndices, *vIndicesPtr, *vIndicesA, *vIndicesPtrA, numShifts, maxNumNz, ii;
+	unsigned int *vIndices, *vIndicesPtr, *vIndicesA, *vIndicesPtrA, numShifts, maxNumNz, icholType, ii;
 	int icholNnz;
 	
 	// Validate Input
-	if ( nrhs != 4 )
+	if ( nrhs != 5 )
 	{
 		mexErrMsgIdAndTxt("IncompleteCholeskyDecomposition:IncompleteCholeskyDecomposition:nrhs", "There must be 4 inputs: A real sparse positive definite matrix of type double, and 3 scalars of type double");
 	}
@@ -114,6 +117,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	discardThr	= (double)mxGetScalar(prhs[1]);
 	shiftVal	= (double)mxGetScalar(prhs[2]);
 	maxNumNz	= (unsigned int)mxGetScalar(prhs[3]);
+	icholType	= (unsigned int)mxGetScalar(prhs[4]);
 
 	if (discardThr < 0.0)
 	{
@@ -143,7 +147,18 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 	}
 	
 	// IncompleteCholeskyDecomposition(vData, vIndices, vIndicesPtr, vDataA, vIndicesA, vIndicesPtrA, (unsigned int)numCols, discardThr, vShifts, numShifts, maxNumNz);
-	icholNnz = _IncompleteCholDec(vData, vIndices, vIndicesPtr, vDataA, vIndicesA, vIndicesPtrA, (unsigned int)numCols, discardThr, shiftVal, maxNumNz);
+	switch (icholType)
+	{
+	case ICHOL_T_ABS_GLOBAL:
+		icholNnz = _IncompleteCholDecTGlobal(vData, vIndices, vIndicesPtr, vDataA, vIndicesA, vIndicesPtrA, (unsigned int)numCols, discardThr, shiftVal, maxNumNz);
+		break;
+	case ICHOL_T_REL_COLUMN:
+		icholNnz = _IncompleteCholDecTColumn(vData, vIndices, vIndicesPtr, vDataA, vIndicesA, vIndicesPtrA, (unsigned int)numCols, discardThr, maxNumNz);
+		break;
+	default:
+		icholNnz = _IncompleteCholDecTGlobal(vData, vIndices, vIndicesPtr, vDataA, vIndicesA, vIndicesPtrA, (unsigned int)numCols, discardThr, shiftVal, maxNumNz);
+		break;
+	}
 
 	if (icholNnz == -1)
 	{
