@@ -1,3 +1,5 @@
+[![Visitors](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FRoyiAvital%2FStackExchangeCodes&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Visitors+%28Daily+%2F+Total%29&edge_flat=false)](https://github.com/RoyiAvital/StackExchangeCodes)
+
 # Sparse Incomplete Cholesky Decomposition
 
 Implementation of the Incomplete Cholesky Decomposition with few methods.  
@@ -54,3 +56,6 @@ The MEX file and MATLAB's `ICT` were the most memory efficient.
  *	[A Survey of Incomplete Factorization Preconditioners](https://www.cc.gatech.edu/~echow/pubs/pims_talk.pdf).
  *	[Experimental Study of ILU Preconditioners for Indefinite Matrices](https://www.cc.gatech.edu/~echow/pubs/stab.pdf).
  *	[A Robust Limited Memory Incomplete Cholesky Factorization](https://www.docdroid.net/HxEyRab).
+ *	[Incomplete Cholesky Factorizations with Limited Memory](https://epubs.siam.org/doi/abs/10.1137/s1064827597327334).
+ *	[Modified Incomplete Cholesky Factorization for Solving Electromagnetic Scattering Problems](http://www.jpier.org/PIERB/pier.php?paper=08112407).
+ *	
