@@ -361,7 +361,7 @@ int _IncompleteCholDecTColumn(double* vData, unsigned int* vIndices, unsigned in
 		vNextIdxRow[jj] = numNz;
 
 		// Output indices must be sorted
-		mergesort(vIdxCol, n_indices, vBuffer);
+		ArrayMergeSort(vIdxCol, n_indices, vBuffer);
 
 		// Write column j into matrix L
 		first = 1;
