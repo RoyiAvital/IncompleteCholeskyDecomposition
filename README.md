@@ -2,6 +2,8 @@
 
 # Sparse Incomplete Cholesky Decomposition
 
+[![View Incomplete Cholesky Decomposition on File Exchange](https://www.mathworks.com/matlabcentral/images/matlab-file-exchange.svg)](https://www.mathworks.com/matlabcentral/fileexchange/98389-incomplete-cholesky-decomposition)
+
 Implementation of the Incomplete Cholesky Decomposition with few methods.  
 The project includes a `C` implementation with a MATLAB MEX wrapper.
 
