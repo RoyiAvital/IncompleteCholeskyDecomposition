@@ -13,7 +13,7 @@ The aim is to have 3 variants of the incomplete decomposition:
 	Using a threshold, $ \tau $ to define which elements will be kept from the decomposition.  
 	It can be using global threshold or by a column.  
 	**Implemented**
- 2.	Pattern (`IC(l)`)
+ 2.	Pattern (`IC(l)`)  
 	Filling elements which are up to `l` steps in the graph of the matrix `A`.
 	For `l = 0` called *Zero Fill* where filling zeros in elements not defined by the pattern.  
 	Also could be filled by a given pattern of sparsity (So given `A` as the pattern it matches `l = 0`).  
