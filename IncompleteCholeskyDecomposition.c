@@ -244,7 +244,7 @@ int _IncompleteCholDecTGlobal( double * vData, unsigned int * vIndices, unsigned
 
 int _IncompleteCholDecTColumn(double* vData, unsigned int* vIndices, unsigned int* vIndicesPtr, double* vDataA, unsigned int* vIndicesA, unsigned int* vIndicesPtrA, unsigned int numCols, double discardThr, unsigned int maxNumNz)
 {
-	//Should mtach MATLAB's `ichol()`.
+	//Should match MATLAB's `ichol()`.
 	//MATLAB computes the threshold based on the sum of the column starting at the diagonal. This is of course a trivial difference and would not take much time to change, but to my surprise, the produced matrices were different.
 	//The solution was that MATLAB drops values from the output matrix before dividing columns by the diagonal element, which was not clear to me from the documentation.
 	//MATLAB drops values from the output matrix before dividing columns by the diagonal element, which was not clear to me from the documentation.

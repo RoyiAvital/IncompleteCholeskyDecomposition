@@ -1,5 +1,5 @@
 function [ mA ] = GenWlsMatrix( numRows )
-%GenWlsMatrix generates the Weighted LEast Squares operator in Sparse
+%GenWlsMatrix generates the Weighted Least Squares operator in Sparse
 %Matrix form.
 %   Detailed explanation goes here
 
