@@ -249,24 +249,25 @@ int _IncompleteCholDecTColumn(double* vData, unsigned int* vIndices, unsigned in
 	//The solution was that MATLAB drops values from the output matrix before dividing columns by the diagonal element, which was not clear to me from the documentation.
 	//MATLAB drops values from the output matrix before dividing columns by the diagonal element, which was not clear to me from the documentation.
 	char* vUsedCol;
-	int * vNonZeroRow, * vNextIdxRow, * vIdxCol, * vBuffer, numNz;
+	int numNz;
+	unsigned int * vNonZeroRow, * vNextIdxRow, * vIdxCol, * vBuffer;
 	unsigned int ii, jj, kk, idx, n_indices, idx_start, k_next, first;
 	double* vValCol, colThr, A_ij, diagElement, L_ij, L_jk, L_ik;
 	
 	// Data of row j
-	vNonZeroRow		= (int*)malloc(numCols * sizeof(int));
-	vNextIdxRow		= (int*)malloc(numCols * sizeof(int));
+	vNonZeroRow		= (unsigned int*)malloc(numCols * sizeof(int));
+	vNextIdxRow		= (unsigned int*)malloc(numCols * sizeof(int));
 
 	// Data of column j
 	vValCol		= (double*)malloc(numCols * sizeof(double));
 	vUsedCol	= (char*)malloc(numCols * sizeof(char));
-	vIdxCol		= (int*)malloc(numCols * sizeof(int));
+	vIdxCol		= (unsigned int*)malloc(numCols * sizeof(int));
 
-	vBuffer = (int*)malloc(numCols * sizeof(int));
+	vBuffer = (unsigned int*)malloc(numCols * sizeof(int));
 
 	for (ii = 0; ii < numCols; ii++) {
-		vNonZeroRow[ii]	= -1;
-		vUsedCol[ii]		= 0;
+		vNonZeroRow[ii]	= LINKED_LIST_DEF_VAL;
+		vUsedCol[ii]	= 0;
 	}
 
 	numNz = 0;
@@ -302,7 +303,7 @@ int _IncompleteCholDecTColumn(double* vData, unsigned int* vIndices, unsigned in
 
 		// Compute new values for column j using nonzero values L_jk of row j
 		kk = vNonZeroRow[jj];
-		while (kk != -1) {
+		while (kk != LINKED_LIST_DEF_VAL) {
 			idx_start = vNextIdxRow[kk];
 			// assert(vIndices[idx_start] == jj);
 			L_jk = vData[idx_start];
@@ -337,6 +338,7 @@ int _IncompleteCholDecTColumn(double* vData, unsigned int* vIndices, unsigned in
 			kk = k_next;
 		}
 
+		// Number of elements exceeds maximum allowed
 		if (numNz + n_indices > maxNumNz) {
 			numNz = -2;
 			break;
@@ -408,15 +410,23 @@ int _IncompleteCholDecTColumn(double* vData, unsigned int* vIndices, unsigned in
 	return numNz;
 }
 
-void IncompleteCholeskyDecomposition( double * vData, unsigned int * vIndices, unsigned int * vIndicesPtr, double * vDataA, unsigned int * vIndicesA, unsigned int * vIndicesPtrA, unsigned int numCols, double discardThr, double* vShifts, unsigned int numShifts, unsigned int maxNumNz )
+int IncompleteCholeskyDecomposition( double * vData, unsigned int * vIndices, unsigned int * vIndicesPtr, double * vDataA, unsigned int * vIndicesA, unsigned int * vIndicesPtrA, unsigned int numCols, double discardThr, double* vShifts, unsigned int numShifts, unsigned int maxNumNz )
 {
-	unsigned int ii, numNz;
+	unsigned int ii;
+	int numNz;
 	double shiftVal;
+
+	numNz = -3; // Default value
 
 	for (ii = 0; ii < numShifts; ii++)
 	{
 		shiftVal = vShifts[ii];
 		numNz = _IncompleteCholDecTGlobal(vData, vIndices, vIndicesPtr, vDataA, vIndicesA, vIndicesPtrA, numCols, discardThr, shiftVal, maxNumNz);
+		if (numNz >= 0) {
+			break; // Stop at first success
+		}
 	}
+
+	return numNz;
 
 }
