@@ -6,6 +6,8 @@
 %   1. See https://github.com/RoyiAvital/IncompleteCholeskyDecompositionThreshold.
 % Remarks:
 %   1.  Was verified on computer with MSVC 2019 Professional.
+%   1.  Was verified on computer with GCC 9.2 (MinGW Distro - nuwen.net 17.1).
+%   2.  For GCC set `setenv('MW_MINGW64_LOC', <PathToGccFolder>);`.
 % TODO:
 %   1.  A
 %   Release Notes:
